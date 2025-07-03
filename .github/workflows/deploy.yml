@@ -1,0 +1,49 @@
+# GitHub Actions workflow for Lambda deployment
+# (To be filled in Step 5) 
+
+name: Deploy Lambda and Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install pip dependencies for Lambda
+        run: |
+          chmod +x build_lambda.sh
+          ./build_lambda.sh
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          TF_VAR_VERIFY_TOKEN: ${{ secrets.VERIFY_TOKEN }}
+          TF_VAR_IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }} 
